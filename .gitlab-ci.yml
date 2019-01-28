@@ -1,0 +1,36 @@
+image: registry.gitlab.com/kolanich/fixed_python:latest
+
+stages:
+  - dependencies
+  - build
+  - test
+  - tooling
+
+variables:
+  GIT_DEPTH: "1"
+  PYTHONUSERBASE: "${CI_PROJECT_DIR}/python_user_packages"
+  MODULE_NAME: "ELFMachine"
+
+build:
+  tags:
+    - shared
+  stage: build
+
+  before_script:
+    - export PATH="$PATH:$PYTHONUSERBASE/bin" # don't move into `variables`
+
+  cache:
+    paths:
+      - "$PYTHONUSERBASE"
+
+  script: |
+    python3 setup.py bdist_wheel
+    mkdir ./wheels
+    mv ./dist/*.whl ./wheels/${MODULE_NAME}-0.CI-py3-none-any.whl
+    pip3 install --user --upgrade ./wheels/${MODULE_NAME}-0.CI-py3-none-any.whl
+    rm ./${MODULE_NAME}.py
+    python3 -m ${MODULE_NAME}
+
+  artifacts:
+    paths:
+      - wheels
